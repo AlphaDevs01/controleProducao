@@ -28,7 +28,7 @@ const PORT = process.env.PORT || 3001;
 
 // Configure middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Configure file uploads
 const storage = multer.diskStorage({

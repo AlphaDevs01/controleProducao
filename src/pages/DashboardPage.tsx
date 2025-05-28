@@ -10,6 +10,14 @@ interface DashboardSummary {
   pendingProductions: number;
 }
 
+interface RecentActivity {
+  id: string;
+  type: 'product' | 'production' | 'stock_alert';
+  title: string;
+  description: string;
+  timeAgo: string;
+}
+
 const DashboardPage: React.FC = () => {
   const [summary, setSummary] = useState<DashboardSummary>({
     totalProducts: 0,
@@ -17,6 +25,7 @@ const DashboardPage: React.FC = () => {
     lowStockItems: 0,
     pendingProductions: 0
   });
+  const [activities, setActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,7 +40,20 @@ const DashboardPage: React.FC = () => {
       }
     };
 
+    const fetchActivities = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/dashboard/activities`);
+        // Garante que activities será sempre um array
+        const data = Array.isArray(response.data) ? response.data : [];
+        setActivities(data);
+      } catch (error) {
+        console.error('Erro ao buscar atividades recentes:', error);
+        setActivities([]); // Garante array mesmo em erro
+      }
+    };
+
     fetchDashboardData();
+    fetchActivities();
   }, []);
 
   const cards = [
@@ -107,42 +129,32 @@ const DashboardPage: React.FC = () => {
               <h2 className="text-xl font-semibold text-slate-800 mb-4">Atividade Recente</h2>
               <div className="border-t border-gray-200">
                 <ul className="divide-y divide-gray-200">
-                  <li className="py-4">
-                    <div className="flex items-center">
-                      <div className="bg-blue-100 p-2 rounded-full mr-3">
-                        <Package2 size={16} className="text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-800">Novo produto adicionado</p>
-                        <p className="text-xs text-slate-500">PROD001 - Container Industrial</p>
-                      </div>
-                      <span className="ml-auto text-xs text-slate-500">2 horas atrás</span>
-                    </div>
-                  </li>
-                  <li className="py-4">
-                    <div className="flex items-center">
-                      <div className="bg-green-100 p-2 rounded-full mr-3">
-                        <Truck size={16} className="text-green-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-800">Produção concluída</p>
-                        <p className="text-xs text-slate-500">10 unidades de PROD005</p>
-                      </div>
-                      <span className="ml-auto text-xs text-slate-500">Ontem</span>
-                    </div>
-                  </li>
-                  <li className="py-4">
-                    <div className="flex items-center">
-                      <div className="bg-amber-100 p-2 rounded-full mr-3">
-                        <AlertCircle size={16} className="text-amber-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-800">Alerta de baixo estoque</p>
-                        <p className="text-xs text-slate-500">INS002 - Chapas de Aço</p>
-                      </div>
-                      <span className="ml-auto text-xs text-slate-500">2 dias atrás</span>
-                    </div>
-                  </li>
+                  {activities.length === 0 ? (
+                    <li className="py-4 text-slate-500 text-sm">Nenhuma atividade recente.</li>
+                  ) : (
+                    activities.map((activity) => (
+                      <li className="py-4" key={activity.id}>
+                        <div className="flex items-center">
+                          <div className={
+                            activity.type === 'product'
+                              ? "bg-blue-100 p-2 rounded-full mr-3"
+                              : activity.type === 'production'
+                              ? "bg-green-100 p-2 rounded-full mr-3"
+                              : "bg-amber-100 p-2 rounded-full mr-3"
+                          }>
+                            {activity.type === 'product' && <Package2 size={16} className="text-blue-600" />}
+                            {activity.type === 'production' && <Truck size={16} className="text-green-600" />}
+                            {activity.type === 'stock_alert' && <AlertCircle size={16} className="text-amber-600" />}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-800">{activity.title}</p>
+                            <p className="text-xs text-slate-500">{activity.description}</p>
+                          </div>
+                          <span className="ml-auto text-xs text-slate-500">{activity.timeAgo}</span>
+                        </div>
+                      </li>
+                    ))
+                  )}
                 </ul>
               </div>
             </div>

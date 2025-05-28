@@ -136,6 +136,19 @@ const Production = sequelize.define('Production', {
     type: DataTypes.INTEGER,
     allowNull: false
   },
+  ordem_producao: { // Novo campo para OF*
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  status: { // Novo campo para status do planejamento
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: 'planned'
+  },
+  ordem: { // Novo campo para ordem de prioridade
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
   data_producao: {
     type: DataTypes.DATE,
     allowNull: false,

@@ -4,7 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx';
 import { Op } from 'sequelize';
 
 const router = express.Router();
@@ -333,8 +333,8 @@ router.post('/import', upload.single('file'), async (req, res) => {
           results.errors.push(`Row skipped: Missing required fields for route ${item.codigo_produto_final || 'unknown'}`);
           continue;
         }
-        
-        // Parse insumos if it's a string
+
+        // Permitir insumos como string JSON, array ou objeto
         let insumos = item.insumos;
         if (typeof insumos === 'string') {
           try {
@@ -344,7 +344,11 @@ router.post('/import', upload.single('file'), async (req, res) => {
             continue;
           }
         }
-        
+        // Se vier como objeto único, transforma em array
+        if (!Array.isArray(insumos)) {
+          insumos = [insumos];
+        }
+
         if (!Array.isArray(insumos)) {
           results.errors.push(`Invalid insumos format for route ${item.codigo_produto_final}`);
           continue;

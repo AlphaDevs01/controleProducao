@@ -32,7 +32,7 @@ const ProductsPage: React.FC = () => {
       setProducts(response.data);
     } catch (error) {
       console.error('Error fetching products:', error);
-      toast.error('Failed to fetch products');
+      toast.error('Falha ao buscar produtos');
     } finally {
       setLoading(false);
     }
@@ -44,14 +44,14 @@ const ProductsPage: React.FC = () => {
   };
 
   const handleDelete = async (codigo: string) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
+    if (window.confirm('Tem certeza que deseja excluir este produto?')) {
       try {
         await axios.delete(`${API_URL}/products/${codigo}`);
-        toast.success('Product deleted successfully');
+        toast.success('Produto excluído com sucesso');
         fetchProducts();
       } catch (error) {
         console.error('Error deleting product:', error);
-        toast.error('Failed to delete product');
+        toast.error('Falha ao excluir produto');
       }
     }
   };
@@ -165,12 +165,14 @@ const ProductsPage: React.FC = () => {
                         <button
                           onClick={() => handleAddEdit(product)}
                           className="text-blue-600 hover:text-blue-900 mr-3"
+                          title="Editar"
                         >
                           <Edit size={18} />
                         </button>
                         <button
                           onClick={() => handleDelete(product.codigo)}
                           className="text-red-600 hover:text-red-900"
+                          title="Excluir"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -203,7 +205,7 @@ const ProductsPage: React.FC = () => {
 
       {isUploadModalOpen && (
         <FileUploadModal
-          title="Import Products"
+          title="Importar Produtos"
           endpoint={`${API_URL}/products/import`}
           templateFields={['codigo', 'descricao', 'familia']}
           onClose={() => setIsUploadModalOpen(false)}

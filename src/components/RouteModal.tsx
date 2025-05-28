@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { X, Plus, Trash2, Search } from 'lucide-react';
+import { X, Plus, Trash2, Search, Upload } from 'lucide-react';
 import { API_URL } from '../config';
+import * as XLSX from 'xlsx';
 
 interface Product {
   codigo: string;
@@ -46,6 +47,7 @@ const RouteModal: React.FC<RouteModalProps> = ({ route, onClose, onSave }) => {
   const [searchInputProduct, setSearchInputProduct] = useState('');
   const [searchInputResults, setSearchInputResults] = useState<Product[]>([]);
   const [isInputDropdownOpen, setIsInputDropdownOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -218,6 +220,78 @@ const RouteModal: React.FC<RouteModalProps> = ({ route, onClose, onSave }) => {
     }
   };
 
+  // Função para importar insumos via arquivo
+  const handleImportInsumos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const data = event.target?.result;
+          if (!data) return;
+          const workbook = XLSX.read(data, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+          if (!jsonData.length) {
+            toast.error('Arquivo vazio ou formato inválido.');
+            return;
+          }
+
+          // Validação dos insumos
+          const validInputs: ProductInput[] = [];
+          const invalidInputs: any[] = [];
+          for (const row of jsonData) {
+            const codigo = String(row.codigo_produto_insumo || '').trim();
+            const quantidade = Number(row.quantidade_utilizada);
+            if (!codigo || !quantidade || quantidade <= 0) {
+              invalidInputs.push(row);
+              continue;
+            }
+            // Verifica se existe na lista de produtos
+            const product = products.find(p => p.codigo === codigo);
+            if (product) {
+              validInputs.push({
+                codigo_produto_insumo: codigo,
+                quantidade_utilizada: quantidade,
+                descricao_insumo: product.descricao
+              });
+            } else {
+              invalidInputs.push(row);
+            }
+          }
+
+          if (validInputs.length) {
+            // Evita duplicidade
+            const novos = validInputs.filter(
+              vi => !formData.insumos.some(i => i.codigo_produto_insumo === vi.codigo_produto_insumo)
+            );
+            setFormData({
+              ...formData,
+              insumos: [...formData.insumos, ...novos]
+            });
+            toast.success(`${novos.length} insumo(s) importado(s) com sucesso`);
+          }
+          if (invalidInputs.length) {
+            toast.warn(`${invalidInputs.length} insumo(s) não encontrados ou inválidos`);
+          }
+        } catch (err) {
+          toast.error('Erro ao processar o arquivo.');
+        } finally {
+          setImporting(false);
+        }
+      };
+      reader.readAsBinaryString(file);
+    } catch (err) {
+      toast.error('Erro ao importar insumos');
+      setImporting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-auto">
@@ -286,6 +360,20 @@ const RouteModal: React.FC<RouteModalProps> = ({ route, onClose, onSave }) => {
           
           <div className="mb-6">
             <h3 className="text-md font-medium text-gray-700 mb-3">Insumos</h3>
+            <div className="flex items-center mb-2 gap-2">
+              <span className="text-sm text-gray-500">Importar insumos via arquivo:</span>
+              <label className="flex items-center cursor-pointer text-blue-600 hover:text-blue-800">
+                <Upload size={18} className="mr-1" />
+                <span>Importar</span>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  style={{ display: 'none' }}
+                  onChange={handleImportInsumos}
+                  disabled={importing}
+                />
+              </label>
+            </div>
             
             {formData.insumos.length > 0 ? (
               <div className="mb-4 overflow-x-auto">

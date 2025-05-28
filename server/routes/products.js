@@ -4,7 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx';
 import { Op } from 'sequelize';
 
 const router = express.Router();
@@ -205,30 +205,53 @@ router.post('/import', upload.single('file'), async (req, res) => {
     
     for (const item of data) {
       try {
-        if (!item.codigo || !item.descricao) {
-          results.errors.push(`Row skipped: Missing required fields for product ${item.codigo || 'unknown'}`);
+        // Converte o código para string e remove casas decimais se vier como float
+        let codigo = String(item.codigo).trim();
+        if (codigo.match(/^\d+\.0+$/)) {
+          codigo = codigo.split('.')[0];
+        }
+
+        if (!codigo || !item.descricao) {
+          results.errors.push(`Row skipped: Missing required fields for product ${codigo || 'unknown'}`);
           continue;
         }
-        
-        const [product, created] = await Product.findOrCreate({
-          where: { codigo: item.codigo },
-          defaults: {
-            descricao: item.descricao,
-            familia: item.familia || null,
-            quantidade_estoque: item.quantidade_estoque || 0
-          }
-        });
-        
-        if (!created) {
-          // Update existing product
-          await product.update({
-            descricao: item.descricao,
-            familia: item.familia !== undefined ? item.familia : product.familia
-            // Note: We don't update quantidade_estoque here to avoid overwriting stock data
+
+        try {
+          const [product, created] = await Product.findOrCreate({
+            where: { codigo },
+            defaults: {
+              descricao: item.descricao,
+              familia: item.familia || null,
+              quantidade_estoque: item.quantidade_estoque || 0
+            }
           });
-          results.updated++;
-        } else {
-          results.created++;
+
+          if (!created) {
+            // Update existing product
+            await product.update({
+              descricao: item.descricao,
+              familia: item.familia !== undefined ? item.familia : product.familia
+            });
+            results.updated++;
+          } else {
+            results.created++;
+          }
+        } catch (error) {
+          // Trata erro de chave única (produto já existe)
+          if (error.name === 'SequelizeUniqueConstraintError') {
+            const product = await Product.findByPk(codigo);
+            if (product) {
+              await product.update({
+                descricao: item.descricao,
+                familia: item.familia !== undefined ? item.familia : product.familia
+              });
+              results.updated++;
+            } else {
+              results.errors.push(`Erro ao atualizar produto ${codigo}: não encontrado após violação de chave única.`);
+            }
+          } else {
+            throw error;
+          }
         }
       } catch (error) {
         console.error(`Error importing product ${item.codigo}:`, error);
