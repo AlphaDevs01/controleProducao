@@ -166,6 +166,7 @@ router.post('/calculate-multiple', async (req, res) => {
       }
       const inputRequirements = [];
       let podeProduzir = true;
+      // Primeiro, calcula status de cada insumo com base no estoque simulado atual
       for (const input of route.insumos) {
         const inputProduct = allProducts.find(p => p.codigo === input.codigo_produto_insumo);
         const requiredQuantity = input.quantidade_utilizada * quantidade;
@@ -190,6 +191,16 @@ router.post('/calculate-multiple', async (req, res) => {
       if (podeProduzir) {
         for (const input of route.insumos) {
           estoqueSimulado[input.codigo_produto_insumo] -= input.quantidade_utilizada * quantidade;
+        }
+      } else {
+        // Mesmo que não possa produzir, consome parcialmente o estoque dos insumos que ainda têm estoque, para refletir corretamente a prioridade dos próximos
+        for (let i = 0; i < route.insumos.length; i++) {
+          const input = route.insumos[i];
+          const reqQty = input.quantidade_utilizada * quantidade;
+          const estoqueAtual = estoqueSimulado[input.codigo_produto_insumo] || 0;
+          if (estoqueAtual > 0) {
+            estoqueSimulado[input.codigo_produto_insumo] = Math.max(estoqueAtual - reqQty, 0);
+          }
         }
       }
       results.push({
