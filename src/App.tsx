@@ -1,3 +1,4 @@
+// App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
@@ -10,7 +11,7 @@ import ProductsPage from './pages/ProductsPage';
 import RoutesPage from './pages/RoutesPage';
 import InventoryPage from './pages/InventoryPage';
 import ProductionPage from './pages/ProductionPage';
-import UserRegisterPage from './pages/UserRegisterPage'; // ou AdminUserRegisterPage
+import UserRegisterPage from './pages/UserRegisterPage';
 import Navbar from './components/Navbar';
 
 function App() {
@@ -21,10 +22,12 @@ function App() {
           <ToastContainer position="top-right" autoClose={3000} />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            {/* UserRegisterPage is only accessible in development */}
+
+            {/* acessível só em DEV */}
             {import.meta.env.DEV && (
-              <Route path="/register\" element={<UserRegisterPage />} />
+              <Route path="/register" element={<UserRegisterPage />} />
             )}
+
             <Route
               path="/"
               element={
@@ -38,6 +41,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/products"
               element={
@@ -51,6 +55,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/routes"
               element={
@@ -64,6 +69,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/inventory"
               element={
@@ -77,6 +83,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/production"
               element={
@@ -90,15 +97,18 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/admin-register"
               element={
                 <ProtectedRoute>
-                  <UserRegisterPage /> {/* ou <AdminUserRegisterPage /> */}
+                  <UserRegisterPage />
                 </ProtectedRoute>
               }
             />
-            <Route path="*" element={<Navigate to="/\" replace />} />
+
+            {/* fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
       </Router>

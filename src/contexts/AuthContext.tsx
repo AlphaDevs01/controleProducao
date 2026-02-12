@@ -14,6 +14,8 @@ interface AuthContextType {
   logout: () => void;
   register: (email: string, password: string) => Promise<void>;
   isAuthenticated: boolean;
+  onLoginSuccess?: () => void;
+  onLogoutSuccess?: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,6 +36,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [onLoginSuccess, setOnLoginSuccess] = useState<(() => void) | undefined>();
+  const [onLogoutSuccess, setOnLogoutSuccess] = useState<(() => void) | undefined>();
 
   useEffect(() => {
     // Check if user is logged in on component mount
@@ -76,6 +80,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       setUser(user);
       setIsAuthenticated(true);
+      onLoginSuccess?.();
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -91,6 +96,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     setUser(null);
     setIsAuthenticated(false);
+    onLogoutSuccess?.();
   };
 
   const register = async (email: string, password: string) => {
@@ -112,6 +118,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     register,
     isAuthenticated,
+    onLoginSuccess,
+    onLogoutSuccess,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

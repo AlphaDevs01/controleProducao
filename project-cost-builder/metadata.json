@@ -1,0 +1,5 @@
+{
+  "name": "Project Cost Builder",
+  "description": "Offline project estimation tool with route-based calculations and Excel integration.",
+  "requestFramePermissions": []
+}
